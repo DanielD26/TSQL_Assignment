@@ -57,8 +57,10 @@ BEGIN
 
     BEGIN CATCH
         BEGIN
+
             DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
                 THROW 50000, @ERRORMESSAGE, 1
+
         END
     END CATCH
 END
@@ -66,4 +68,48 @@ END
 GO
 
 EXEC DELETE_ALL_CUSTOMERS;
+
+-- TASK 3
+
+GO
+
+IF OBJECT_ID('ADD_PRODUCT') IS NOT NULL
+DROP PROCEDURE ADD_PRODUCT;
+GO
+
+CREATE PROCEDURE ADD_PRODUCT @PPRODID INT, @PPRODNAME NVARCHAR(100), @PPRICE MONEY AS
+
+BEGIN 
+    BEGIN TRY
+        IF @PPRODID < 1000 OR @PPRODID > 2500
+            THROW 50040, 'Product ID out of range', 1
+        ELSE IF @PPRICE < 0 OR @PPRICE > 999.99
+            THROW 50050, 'Price out of range', 1
+        
+        INSERT INTO PRODUCT (PRODID, PRODNAME, SELLING_PRICE, SALES_YTD)
+        VALUES (@PPRODID, @PPRODNAME, @PPRICE, 0)
+    END TRY
+
+    BEGIN CATCH
+        IF ERROR_NUMBER() = 2627
+            THROW 50030, 'Duplicate Product ID', 1
+        ELSE IF ERROR_NUMBER() = 50040
+            THROW
+        ELSE IF ERROR_NUMBER() = 50050
+            THROW
+        ELSE
+            BEGIN
+                DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                THROW 50000, @ERRORMESSAGE, 1
+            END; 
+    END CATCH
+END;
+
+GO
+
+EXEC ADD_PRODUCT @pprodid = 1000, @pprodname = 'Bill', @pprice = 1
+EXEC ADD_PRODUCT @pprodid = 2501, @pprodname = 'Bob', @pprice = 1
+EXEC ADD_PRODUCT @pprodid = 999, @pprodname = 'Brad', @pprice = 1
+
 select * from customer;
+select * from PRODUCT;
