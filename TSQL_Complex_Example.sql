@@ -1,5 +1,7 @@
 USE TSQL_ASSIGNMENT;
 
+-- TASK 1
+
 IF OBJECT_ID('ADD_CUSTOMER') IS NOT NULL
 DROP PROCEDURE ADD_CUSTOMER;
 GO
@@ -32,8 +34,36 @@ END;
 
 GO
 
--- EXEC ADD_CUSTOMER @pcustid = 1, @pcustname = 'testdude2';
+EXEC ADD_CUSTOMER @pcustid = 3, @pcustname = 'testdude2';
 
--- EXEC ADD_CUSTOMER @pcustid = 500, @pcustname = 'testdude3';
+EXEC ADD_CUSTOMER @pcustid = 497, @pcustname = 'testdude3';
 
+
+-- TASK 2
+GO 
+
+IF OBJECT_ID('DELETE_ALL_CUSTOMERS') IS NOT NULL
+DROP PROCEDURE DELETE_ALL_CUSTOMERS;
+GO
+
+CREATE PROCEDURE DELETE_ALL_CUSTOMERS AS
+BEGIN
+    BEGIN TRY
+
+        DELETE FROM CUSTOMER
+        SELECT @@ROWCOUNT AS NumberOfRowsDeleted
+
+    END TRY
+
+    BEGIN CATCH
+        BEGIN
+            DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                THROW 50000, @ERRORMESSAGE, 1
+        END
+    END CATCH
+END
+
+GO
+
+EXEC DELETE_ALL_CUSTOMERS;
 select * from customer;
