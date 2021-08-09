@@ -201,7 +201,7 @@ BEGIN
         UPDATE CUSTOMER
         SET SALES_YTD = @PAMT
         WHERE CUSTID = @PCUSTID;
-        IF @@ROWCOUNT != 0
+        IF @@ROWCOUNT = 0
             THROW 50070, 'Customer ID not found', 1
     END TRY
 
@@ -281,7 +281,7 @@ BEGIN
         SET SALES_YTD = @PAMT
         WHERE @PPRODID = PRODID;
 
-        IF @PPRODID NOT IN (SELECT PRODID FROM PRODUCT)
+        IF @@ROWCOUNT = 0
             THROW 50100, 'Product ID not found', 1
     END TRY
 
@@ -304,5 +304,46 @@ GO
 EXEC UPD_PROD_SALESYTD @PPRODID = 1000, @PAMT = 500;
 EXEC UPD_PROD_SALESYTD @PPRODID = 1003, @PAMT = 500;
 
+-- TASK 9
+
+GO
+
+IF OBJECT_ID('UPD_CUSTOMER_STATUS') IS NOT NULL
+DROP PROCEDURE UPD_CUSTOMER_STATUS
+GO
+
+CREATE PROCEDURE UPD_CUSTOMER_STATUS @PCUSTID INT, @PSTATUS NVARCHAR(7) AS
+
+BEGIN
+    BEGIN TRY
+        IF (@PSTATUS != 'OK' AND @PSTATUS != 'SUSPEND')
+            THROW 50130, 'Invalid Status value', 1
+
+        UPDATE CUSTOMER
+        SET [STATUS] = @PSTATUS
+        WHERE @PCUSTID = CUSTID
+
+        IF @@ROWCOUNT = 0
+            THROW 50120, 'Customer ID not found', 1
+        
+    END TRY
+        
+    BEGIN CATCH
+        IF ERROR_NUMBER() = 50120
+            THROW
+        ELSE IF ERROR_NUMBER() = 50130
+            THROW
+        ELSE
+            BEGIN
+                DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                THROW 50000, @ERRORMESSAGE, 1
+            END
+    END CATCH
+END
+
+GO
+
+EXEC UPD_CUSTOMER_STATUS @PCUSTID = 3, @PSTATUS = 'OK';
+EXEC UPD_CUSTOMER_STATUS @PCUSTID = 1, @PSTATUS = 'OK';
 select * from customer;
 select * from PRODUCT;
