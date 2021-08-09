@@ -34,11 +34,6 @@ END;
 
 GO
 
-EXEC ADD_CUSTOMER @pcustid = 3, @pcustname = 'testdude2';
-
-EXEC ADD_CUSTOMER @pcustid = 497, @pcustname = 'testdude3';
-
-
 -- TASK 2
 GO 
 
@@ -66,8 +61,6 @@ BEGIN
 END
 
 GO
-
-EXEC DELETE_ALL_CUSTOMERS;
 
 -- TASK 3
 
@@ -107,10 +100,6 @@ END;
 
 GO
 
-EXEC ADD_PRODUCT @pprodid = 1000, @pprodname = 'Bill', @pprice = 1
-EXEC ADD_PRODUCT @pprodid = 2500, @pprodname = 'Bob', @pprice = 1
-EXEC ADD_PRODUCT @pprodid = 1001, @pprodname = 'Brad', @pprice = 1
-
 -- TASK 4
 
 GO 
@@ -139,8 +128,6 @@ BEGIN
 END
 
 GO
-
--- EXEC DELETE_ALL_PRODUCTS;
 
 -- TASK 5
 
@@ -179,14 +166,6 @@ END
 
 GO
 
-BEGIN
-    DECLARE @RETURNSTRING NVARCHAR(1000) = 'Original value';
-
-    EXEC GET_CUSTOMER_STRING @PCUSTID = 3, @PRETURNSTRING = @RETURNSTRING OUT
-
-END
-
-
 -- TASK 6
 
 GO
@@ -219,9 +198,6 @@ BEGIN
 END
 
 GO
-
-EXEC UPD_CUST_SALESYTD @PCUSTID = 3, @PAMT = 10;
-EXEC UPD_CUST_SALESYTD @PCUSTID = 1, @PAMT = 10;
 
 -- TASK 7
 
@@ -259,13 +235,6 @@ END
 
 GO
 
-BEGIN
-    DECLARE @RETURNSTRING NVARCHAR(1000) = 'Original value';
-
-    EXEC GET_PROD_STRING @PPRODID = 1000, @PRETURNSTRING = @RETURNSTRING OUT
-
-END
-
 -- TASK 8
 
 GO
@@ -300,9 +269,6 @@ BEGIN
 END
 
 GO
-
-EXEC UPD_PROD_SALESYTD @PPRODID = 1000, @PAMT = 500;
-EXEC UPD_PROD_SALESYTD @PPRODID = 1003, @PAMT = 500;
 
 -- TASK 9
 
@@ -343,7 +309,53 @@ END
 
 GO
 
+
+-- TESTING
+/*
+-- Task 1 TESTS
+EXEC ADD_CUSTOMER @pcustid = 3, @pcustname = 'testdude2';
+EXEC ADD_CUSTOMER @pcustid = 497, @pcustname = 'testdude3';
+
+-- Task 2 TESTS
+EXEC DELETE_ALL_CUSTOMERS;
+
+-- Task 3 TESTS
+EXEC ADD_PRODUCT @pprodid = 1000, @pprodname = 'Bill', @pprice = 1
+EXEC ADD_PRODUCT @pprodid = 2500, @pprodname = 'Bob', @pprice = 1
+EXEC ADD_PRODUCT @pprodid = 1001, @pprodname = 'Brad', @pprice = 1
+
+-- Task 4 TESTS
+EXEC DELETE_ALL_PRODUCTS;
+
+-- TASK 5
+BEGIN
+    DECLARE @RETURNSTRING NVARCHAR(1000) = 'Original value';
+
+    EXEC GET_CUSTOMER_STRING @PCUSTID = 3, @PRETURNSTRING = @RETURNSTRING OUT
+
+END
+
+-- TASK 6
+EXEC UPD_CUST_SALESYTD @PCUSTID = 3, @PAMT = 10;
+EXEC UPD_CUST_SALESYTD @PCUSTID = 1, @PAMT = 10;
+
+-- TASK 7
+BEGIN
+    DECLARE @RETURNSTRING NVARCHAR(1000) = 'Original value';
+
+    EXEC GET_PROD_STRING @PPRODID = 1000, @PRETURNSTRING = @RETURNSTRING OUT
+
+END
+
+-- TASK 8
+EXEC UPD_PROD_SALESYTD @PPRODID = 1000, @PAMT = 500;
+EXEC UPD_PROD_SALESYTD @PPRODID = 1003, @PAMT = 500;
+
+-- TASK 9
 EXEC UPD_CUSTOMER_STATUS @PCUSTID = 3, @PSTATUS = 'OK';
 EXEC UPD_CUSTOMER_STATUS @PCUSTID = 1, @PSTATUS = 'OK';
+
+*/
+
 select * from customer;
 select * from PRODUCT;
