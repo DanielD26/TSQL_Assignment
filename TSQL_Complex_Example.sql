@@ -306,19 +306,19 @@ USE TSQL_ASSIGNMENT;
 
     BEGIN
         BEGIN TRY
-            -- DECLARE @STATUS NVARCHAR(7)
-            -- SELECT @STATUS = STATUS FROM CUSTOMER WHERE @PCUSTID = CUSTID;
-            -- IF (@STATUS != 'OK')
-            --     THROW 50150, 'Customer status is not OK', 1
-            -- ELSE IF @PQTY < 1 OR @PQTY > 999
-            --     THROW 50140, 'Sale Quantity outside valid range', 1
-            -- ELSE IF @PCUSTID NOT IN (SELECT CUSTID FROM CUSTOMER)
-            --     THROW 50160, 'Customer ID not found', 1
-            -- ELSE IF @PPRODID NOT IN (SELECT PRODID FROM PRODUCT)
-            --     THROW 50170, 'Product ID not found', 1
+            DECLARE @STATUS NVARCHAR(7)
+            SELECT @STATUS = STATUS FROM CUSTOMER WHERE @PCUSTID = CUSTID;
+            IF (@STATUS != 'OK')
+                THROW 50150, 'Customer status is not OK', 1
+            ELSE IF @PQTY < 1 OR @PQTY > 999
+                THROW 50140, 'Sale Quantity outside valid range', 1
+            ELSE IF @PCUSTID NOT IN (SELECT CUSTID FROM CUSTOMER)
+                THROW 50160, 'Customer ID not found', 1
+            ELSE IF @PPRODID NOT IN (SELECT PRODID FROM PRODUCT)
+                THROW 50170, 'Product ID not found', 1
 
             UPDATE C
-                SET C.SALES_YTD = @PQTY * P.SELLING_PRICE
+                SET C.SALES_YTD = (@PQTY * P.SELLING_PRICE)
             FROM CUSTOMER C
                 INNER JOIN PRODUCT P
                     ON C.SALES_YTD = P.SALES_YTD
@@ -343,12 +343,29 @@ USE TSQL_ASSIGNMENT;
         END CATCH
     END
 
+-- TASK 11
+    GO
 
+    IF OBJECT_ID('SUM_CUSTOMER_SALESYTD') IS NOT NULL
+    DROP PROCEDURE SUM_CUSTOMER_SALESYTD
+    GO
 
+    CREATE PROCEDURE SUM_CUSTOMER_SALESYTD AS
+    BEGIN
+        BEGIN TRY
+            SELECT SUM(SALES_YTD) FROM CUSTOMER
+        END TRY
 
+        BEGIN CATCH
+            BEGIN
 
+                DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                    THROW 50000, @ERRORMESSAGE, 1
 
-
+            END
+        END CATCH
+    END
+/*
 -- TESTING
 
     -- Task 1 TESTS
@@ -362,7 +379,7 @@ USE TSQL_ASSIGNMENT;
     -- Task 2 TESTS
         EXEC DELETE_ALL_CUSTOMERS;
 
-        -- Task 3 TESTS
+    -- Task 3 TESTS
         EXEC ADD_PRODUCT @pprodid = 1000, @pprodname = 'Bill', @pprice = 10
         EXEC ADD_PRODUCT @pprodid = 1001, @pprodname = 'Bob', @pprice = 10
 
@@ -442,7 +459,11 @@ USE TSQL_ASSIGNMENT;
         EXEC ADD_SIMPLE_SALE @PCUSTID = 3, @PPRODID = 1000, @PQTY = 2;
         -- EXCEPTION - Product ID not found
         EXEC ADD_SIMPLE_SALE @PCUSTID = 1, @PPRODID = 1003, @PQTY = 2;
+    
+    -- TASK 11 TESTS
+        EXEC SUM_CUSTOMER_SALESYTD;
 
+*/
 
 select * from customer;
 select * from PRODUCT;
