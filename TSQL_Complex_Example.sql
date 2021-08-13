@@ -1,4 +1,26 @@
 USE TSQL_ASSIGNMENT;
+/*
+    GO
+
+    IF OBJECT_ID('XXXXXXXXX') IS NOT NULL
+    DROP PROCEDURE XXXXXXXXX
+    GO
+
+    CREATE PROCEDURE XXXXXXXXX AS
+    BEGIN
+        BEGIN TRY
+            
+        END TRY
+
+        BEGIN CATCH
+            BEGIN
+
+        
+            END
+        END CATCH
+    END
+
+*/
 
 -- TASK 1
 
@@ -113,10 +135,8 @@ USE TSQL_ASSIGNMENT;
 
         BEGIN CATCH
             BEGIN
-
                 DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
                     THROW 50000, @ERRORMESSAGE, 1
-
             END
         END CATCH
     END
@@ -217,8 +237,10 @@ USE TSQL_ASSIGNMENT;
         BEGIN CATCH
             IF ERROR_NUMBER() = 50090
                 THROW
-            DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
-                    THROW 50000, @ERRORMESSAGE, 1 
+            BEGIN
+                DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                    THROW 50000, @ERRORMESSAGE, 1
+            END
         END CATCH
     END
 
@@ -365,6 +387,50 @@ USE TSQL_ASSIGNMENT;
             END
         END CATCH
     END
+
+-- TASK 12
+    GO
+
+    IF OBJECT_ID('SUM_PRODUCT_SALESYTD') IS NOT NULL
+    DROP PROCEDURE SUM_PRODUCT_SALESYTD
+    GO
+
+    CREATE PROCEDURE SUM_PRODUCT_SALESYTD AS
+    BEGIN
+        BEGIN TRY
+            SELECT SUM(SALES_YTD) FROM PRODUCT
+        END TRY
+
+        BEGIN CATCH
+            BEGIN
+
+                DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                    THROW 50000, @ERRORMESSAGE, 1
+
+            END
+        END CATCH
+    END
+
+-- TASK 13
+    GO
+
+    IF OBJECT_ID('GET_ALL_CUSTOMERS') IS NOT NULL
+    DROP PROCEDURE GET_ALL_CUSTOMERS
+    GO
+
+    CREATE PROCEDURE GET_ALL_CUSTOMERS @POUTCUR CURSOR OUT AS
+    BEGIN
+        BEGIN TRY
+            SET @POUTCUR = (SELECT * FROM CUSTOMER)
+        END TRY
+
+        BEGIN CATCH
+            BEGIN
+
+        
+            END
+        END CATCH
+    END
 /*
 -- TESTING
 
@@ -409,6 +475,7 @@ USE TSQL_ASSIGNMENT;
 
     -- TASK 6 TESTS
         EXEC UPD_CUST_SALESYTD @PCUSTID = 1, @PAMT = 10;
+        EXEC UPD_CUST_SALESYTD @PCUSTID = 2, @PAMT = 10;
 
         -- EXCEPTION - Customer ID not found
         EXEC UPD_CUST_SALESYTD @PCUSTID = 3, @PAMT = 10;
@@ -433,6 +500,7 @@ USE TSQL_ASSIGNMENT;
 
     -- TASK 8 TESTS
         EXEC UPD_PROD_SALESYTD @PPRODID = 1000, @PAMT = 500;
+        EXEC UPD_PROD_SALESYTD @PPRODID = 1001, @PAMT = 500;
 
         -- EXCEPTION - Product ID not found
         EXEC UPD_PROD_SALESYTD @PPRODID = 1003, @PAMT = 500;
@@ -462,6 +530,8 @@ USE TSQL_ASSIGNMENT;
     
     -- TASK 11 TESTS
         EXEC SUM_CUSTOMER_SALESYTD;
+    -- TASK 12 TESTS
+        EXEC SUM_PRODUCT_SALESYTD;
 
 */
 
