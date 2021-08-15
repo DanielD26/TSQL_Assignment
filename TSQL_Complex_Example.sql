@@ -6,7 +6,7 @@ USE TSQL_ASSIGNMENT;
     DROP PROCEDURE XXXXXXXXX
     GO
 
-    CREATE PROCEDURE XXXXXXXXX AS
+    CREATE PROCEDURE XXXXXXXXX ____ AS
     BEGIN
         BEGIN TRY
             
@@ -41,7 +41,7 @@ USE TSQL_ASSIGNMENT;
 
         END TRY
         BEGIN CATCH
-            if ERROR_NUMBER() = 2627
+            IF ERROR_NUMBER() = 2627
                 THROW 50010, 'Duplicate customer ID', 1
             ELSE IF ERROR_NUMBER() = 50020
                 THROW
@@ -340,10 +340,14 @@ USE TSQL_ASSIGNMENT;
                 THROW 50170, 'Product ID not found', 1
 
             UPDATE C
-                SET C.SALES_YTD = (@PQTY * P.SELLING_PRICE)
+                SET C.SALES_YTD = @PQTY * P.SELLING_PRICE
             FROM CUSTOMER C
                 INNER JOIN PRODUCT P
-                    ON C.SALES_YTD = P.SALES_YTD
+                    ON C.SALES_YTD = P.SALES_YTD;
+
+            UPDATE P
+                SET P.SALES_YTD = (@PQTY * P.SELLING_PRICE)
+            FROM PRODUCT P
 
 
         END TRY
@@ -454,6 +458,72 @@ USE TSQL_ASSIGNMENT;
             END
         END CATCH
     END
+
+-- TASK 15 ADD_LOCATION
+    GO
+
+    IF OBJECT_ID('ADD_LOCATION') IS NOT NULL
+    DROP PROCEDURE ADD_LOCATION
+    GO
+
+    CREATE PROCEDURE ADD_LOCATION @PLOCCODE NVARCHAR(5), @PMINQTY INT, @PMAXQTY INT AS
+    BEGIN
+        BEGIN TRY
+            IF LEN(@PLOCCODE) != 5
+                THROW 50190, 'Location Code length invalid', 1;
+            ELSE IF @PMINQTY < 0 OR @PMINQTY > 999
+                THROW 50200, 'Minimum Qty out of range', 1;
+            ELSE IF @PMAXQTY < 0 OR @PMAXQTY > 999
+                THROW 50210, 'Maximum Qty out of range', 1;
+            ELSE IF @PMAXQTY < @PMINQTY
+                THROW 50220, 'Minimum Qty larger than Maximum Qty', 1;
+
+            INSERT INTO LOCATION (LOCID, MINQTY, MAXQTY)
+            VALUES (@PLOCCODE, @PMINQTY, @PMAXQTY);
+        END TRY
+
+        BEGIN CATCH
+            IF ERROR_NUMBER() = 2627
+                THROW 50010, 'Duplicate location ID', 1
+            ELSE IF ERROR_NUMBER() = 50190
+                THROW
+            ELSE IF ERROR_NUMBER() = 50200
+                THROW
+            ELSE IF ERROR_NUMBER() = 50210
+                THROW
+            ELSE IF ERROR_NUMBER() = 50220
+                THROW
+            ELSE
+                BEGIN
+                    DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                    THROW 50000, @ERRORMESSAGE, 1
+                END
+        END CATCH
+    END
+
+        -- REMOVE LOCATION  
+            GO 
+
+            IF OBJECT_ID('DELETE_ALL_LOCATION') IS NOT NULL
+            DROP PROCEDURE DELETE_ALL_LOCATION;
+            GO
+
+            CREATE PROCEDURE DELETE_ALL_LOCATION AS
+            BEGIN
+                BEGIN TRY
+
+                    DELETE FROM LOCATION
+                    RETURN @@ROWCOUNT
+
+                END TRY
+
+                BEGIN CATCH
+                    BEGIN
+                        DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                            THROW 50000, @ERRORMESSAGE, 1
+                    END
+                END CATCH
+            END
 /*
 -- TESTING
 
@@ -580,8 +650,27 @@ USE TSQL_ASSIGNMENT;
             CLOSE @MYCURSOR;
             DEALLOCATE @MYCURSOR;
         END
-
 */
+    -- TASK 15
+        EXEC ADD_LOCATION @PLOCCODE = 'POO12', @PMINQTY = 10, @PMAXQTY = 20;
+        
+        -- EXCEPTION - Duplicate primary key
+        EXEC ADD_LOCATION @PLOCCODE = 'POO12', @PMINQTY = 10, @PMAXQTY = 20;
+        -- EXCEPTION - Location Code length invalid
+        EXEC ADD_LOCATION @PLOCCODE = 'POOP12', @PMINQTY = 10, @PMAXQTY = 20;
+        EXEC ADD_LOCATION @PLOCCODE = 'POO1', @PMINQTY = 10, @PMAXQTY = 20;
+        -- EXCEPTION - Minimum Qty out of range
+        EXEC ADD_LOCATION @PLOCCODE = 'PEE12', @PMINQTY = 1000, @PMAXQTY = 20;
+        EXEC ADD_LOCATION @PLOCCODE = 'PEE12', @PMINQTY = -1, @PMAXQTY = 20;
+        -- EXCEPTION - Maximum Qty out of range
+        EXEC ADD_LOCATION @PLOCCODE = 'PEE12', @PMINQTY = 10, @PMAXQTY = 1000;
+        -- EXCEPTION -Minimum Qty larger than Maximum Qty
+        EXEC ADD_LOCATION @PLOCCODE = 'PEE12', @PMINQTY = 20, @PMAXQTY = 10;
+
+        -- DELETE_ALL_LOCATION
+        EXEC DELETE_ALL_LOCATION
+
 select * from customer;
 select * from PRODUCT;
 SELECT * FROM SALE;
+SELECT * FROM [LOCATION];
