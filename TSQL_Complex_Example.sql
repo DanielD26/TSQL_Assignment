@@ -141,7 +141,7 @@ USE TSQL_ASSIGNMENT;
         END CATCH
     END
 
--- TASK 5 GET_PROD_STRING
+-- TASK 5 GET_CUSTOMER_STRING
 
     GO
 
@@ -337,18 +337,17 @@ USE TSQL_ASSIGNMENT;
             ELSE IF @PCUSTID NOT IN (SELECT CUSTID FROM CUSTOMER)
                 THROW 50160, 'Customer ID not found', 1
             ELSE IF @PPRODID NOT IN (SELECT PRODID FROM PRODUCT)
-                THROW 50170, 'Product ID not found', 1
+                THROW 50170, 'Product ID not found', 1 
 
             UPDATE C
-                SET C.SALES_YTD = @PQTY * P.SELLING_PRICE
+                SET C.SALES_YTD = (@PQTY * P.SELLING_PRICE)
             FROM CUSTOMER C
                 INNER JOIN PRODUCT P
-                    ON C.SALES_YTD = P.SALES_YTD;
+                    ON P.SALES_YTD = C.SALES_YTD
 
             UPDATE P
                 SET P.SALES_YTD = (@PQTY * P.SELLING_PRICE)
-            FROM PRODUCT P
-
+            FROM PRODUCT P   
 
         END TRY
 
@@ -425,7 +424,7 @@ USE TSQL_ASSIGNMENT;
     CREATE PROCEDURE GET_ALL_CUSTOMERS @POUTCUR CURSOR VARYING OUT AS
     BEGIN
         BEGIN TRY
-            SET @POUTCUR = CURSOR FORWARD_ONLY STATIC FOR SELECT * FROM CUSTOMER;
+            SET @POUTCUR = CURSOR FOR SELECT * FROM CUSTOMER;
             OPEN @POUTCUR;
         END TRY
 
@@ -447,7 +446,7 @@ USE TSQL_ASSIGNMENT;
     CREATE PROCEDURE GET_ALL_PRODUCTS @POUTCUR CURSOR VARYING OUT AS
     BEGIN
         BEGIN TRY
-            SET @POUTCUR = CURSOR FORWARD_ONLY STATIC FOR SELECT * FROM PRODUCT;
+            SET @POUTCUR = CURSOR FOR SELECT * FROM PRODUCT;
             OPEN @POUTCUR;
         END TRY
 
@@ -466,7 +465,7 @@ USE TSQL_ASSIGNMENT;
     DROP PROCEDURE ADD_LOCATION
     GO
 
-    CREATE PROCEDURE ADD_LOCATION @PLOCCODE NVARCHAR(5), @PMINQTY INT, @PMAXQTY INT AS
+    CREATE PROCEDURE ADD_LOCATION @PLOCCODE NVARCHAR(MAX), @PMINQTY INT, @PMAXQTY INT AS
     BEGIN
         BEGIN TRY
             IF LEN(@PLOCCODE) != 5
@@ -524,6 +523,122 @@ USE TSQL_ASSIGNMENT;
                     END
                 END CATCH
             END
+
+-- TASK 16 ADD_COMPLEX_SALE
+    GO
+
+    IF OBJECT_ID('ADD_COMPLEX_SALE') IS NOT NULL
+    DROP PROCEDURE ADD_COMPLEX_SALE
+    GO
+
+    CREATE PROCEDURE ADD_COMPLEX_SALE @PCUSTID INT, @PPRODID INT, @PQTY INT, @PDATE NVARCHAR(8) AS
+    BEGIN
+        BEGIN TRY
+            DECLARE @STATUS NVARCHAR(7)
+            SELECT @STATUS = STATUS FROM CUSTOMER WHERE @PCUSTID = CUSTID;
+            IF @PQTY < 1 OR @PQTY > 999
+                THROW 50230, 'Sale Quantity outside valid range', 1;
+
+            DECLARE @CONVERTED_DATE DATE;
+            BEGIN TRY
+                SET @CONVERTED_DATE = CONVERT(DATE, @PDATE, 112);
+            END TRY
+            BEGIN CATCH
+                THROW 50250, 'Date not valid', 1;
+            END CATCH 
+            IF (@STATUS != 'OK')
+                THROW 50240, 'Customer status is not OK', 1;
+            ELSE IF @PCUSTID NOT IN (SELECT CUSTID FROM CUSTOMER)
+                THROW 50260, 'Customer ID not found', 1
+            ELSE IF @PPRODID NOT IN (SELECT PRODID FROM PRODUCT)
+                THROW 50270, 'Product ID not found', 1
+                
+            DECLARE @UNITPRICE MONEY
+            SELECT @UNITPRICE = SELLING_PRICE FROM PRODUCT WHERE PRODID = @PPRODID
+            
+
+            INSERT INTO SALE(SALEID, CUSTID, PRODID, QTY, PRICE, SALEDATE)
+            VALUES (NEXT VALUE FOR SALE_SEQ, @PCUSTID, @PPRODID, @PQTY, @UNITPRICE ,@CONVERTED_DATE)
+
+            SELECT NEXT VALUE FOR SALE_SEQ;
+
+            UPDATE C
+                SET C.SALES_YTD = (@PQTY * P.SELLING_PRICE)
+            FROM CUSTOMER C
+                INNER JOIN PRODUCT P
+                    ON P.SALES_YTD = C.SALES_YTD
+
+            UPDATE P
+                SET P.SALES_YTD = (@PQTY * P.SELLING_PRICE)
+            FROM PRODUCT P
+            
+        END TRY
+
+        BEGIN CATCH
+            IF ERROR_NUMBER() = 50240
+                THROW;
+            ELSE IF ERROR_NUMBER() = 50230
+                THROW;
+            ELSE IF ERROR_NUMBER() = 50250
+                THROW;
+            ELSE IF ERROR_NUMBER() = 50260
+                THROW;
+            ELSE IF ERROR_NUMBER() = 50270
+                THROW;
+            ELSE
+                BEGIN
+                    DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                        THROW 50000, @ERRORMESSAGE, 1
+                END
+        END CATCH
+    END
+
+-- TASK 17 - GET_ALLSALES
+    GO
+
+    IF OBJECT_ID('GET_ALLSALES') IS NOT NULL
+    DROP PROCEDURE GET_ALLSALES
+    GO
+
+    CREATE PROCEDURE GET_ALLSALES @POUTCUR CURSOR VARYING OUT AS
+    BEGIN
+        BEGIN TRY
+            SET @POUTCUR = CURSOR FOR SELECT * FROM SALE;
+            OPEN @POUTCUR;
+        END TRY
+
+        BEGIN CATCH
+            BEGIN
+                DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                    THROW 50000, @ERRORMESSAGE, 1
+            END
+        END CATCH
+    END
+
+-- TASK 18 - COUNT_PRODUCT_SALES
+    GO
+
+    IF OBJECT_ID('COUNT_PRODUCT_SALES') IS NOT NULL
+    DROP PROCEDURE COUNT_PRODUCT_SALES
+    GO
+
+    CREATE PROCEDURE COUNT_PRODUCT_SALES @PDAYS INT AS
+    BEGIN
+        BEGIN TRY
+            SELECT COUNT(SALEDATE) FROM SALE 
+                WHERE @PDAYS > DATEDIFF(DAY, SALEDATE, GETDATE());
+            
+
+        END TRY
+
+        BEGIN CATCH
+            BEGIN
+                DECLARE @ERRORMESSAGE NVARCHAR(MAX) = ERROR_MESSAGE();
+                    THROW 50000, @ERRORMESSAGE, 1
+            END
+        END CATCH
+    END
+
 /*
 -- TESTING
 
@@ -629,11 +744,14 @@ USE TSQL_ASSIGNMENT;
 
     -- TASK 13 TESTS
         BEGIN
-            DECLARE @MYCURSOR CURSOR;
+            DECLARE @MYCURSOR CURSOR, @ID INT, @NAME NVARCHAR(100), @SYTD MONEY, @STATUS NVARCHAR(7);
+
             EXEC GET_ALL_CUSTOMERS @POUTCUR = @MYCURSOR OUT;
+            FETCH NEXT FROM @MYCURSOR INTO @ID, @NAME, @SYTD, @STATUS;
             WHILE (@@FETCH_STATUS = 0)
                 BEGIN
-                    FETCH NEXT FROM @MYCURSOR;
+                    PRINT(CONCAT(@ID, ' ', @NAME, ' ', @SYTD, ' ', @STATUS))
+                    FETCH NEXT FROM @MYCURSOR INTO @ID, @NAME, @SYTD, @STATUS;
                 END
             CLOSE @MYCURSOR;
             DEALLOCATE @MYCURSOR;
@@ -641,17 +759,19 @@ USE TSQL_ASSIGNMENT;
 
     -- TASK 14 TESTS
         BEGIN
-            DECLARE @MYCURSOR CURSOR;
+            DECLARE @MYCURSOR CURSOR, @ID INT, @NAME NVARCHAR(100), @PRICE MONEY, @SYTD MONEY;
             EXEC GET_ALL_PRODUCTS @POUTCUR = @MYCURSOR OUT;
+            FETCH NEXT FROM @MYCURSOR INTO @ID, @NAME, @PRICE, @SYTD;
             WHILE (@@FETCH_STATUS = 0)
                 BEGIN
-                    FETCH NEXT FROM @MYCURSOR;
+                    PRINT(CONCAT(@ID, ' ', @NAME, ' ', @PRICE, ' ', @SYTD))
+                    FETCH NEXT FROM @MYCURSOR INTO @ID, @NAME, @PRICE, @SYTD;
                 END
             CLOSE @MYCURSOR;
             DEALLOCATE @MYCURSOR;
         END
-*/
-    -- TASK 15
+
+    -- TASK 15 TESTS
         EXEC ADD_LOCATION @PLOCCODE = 'POO12', @PMINQTY = 10, @PMAXQTY = 20;
         
         -- EXCEPTION - Duplicate primary key
@@ -669,7 +789,38 @@ USE TSQL_ASSIGNMENT;
 
         -- DELETE_ALL_LOCATION
         EXEC DELETE_ALL_LOCATION
+    -- TASK 16 TEST
+        EXEC ADD_COMPLEX_SALE @PCUSTID = 1, @PPRODID = 1000, @PQTY = 10, @PDATE = '20211015';
 
+        -- EXCEPTION - Sale Quantity Out of Range
+        EXEC ADD_COMPLEX_SALE @PCUSTID = 1, @PPRODID = 1000, @PQTY = 0, @PDATE = '20211015';
+        EXEC ADD_COMPLEX_SALE @PCUSTID = 1, @PPRODID = 1000, @PQTY = 1000, @PDATE = '20211015';
+        -- EXCEPTION - Invalid customer status
+        EXEC ADD_COMPLEX_SALE @PCUSTID = 2, @PPRODID = 1000, @PQTY = 10, @PDATE = '20211015';
+        -- EXCEPTION - Invalid sale date
+        EXEC ADD_COMPLEX_SALE @PCUSTID = 1, @PPRODID = 1000, @PQTY = 10, @PDATE = '2021-10-15';
+        -- EXCEPTION - Customer ID not found
+        EXEC ADD_COMPLEX_SALE @PCUSTID = 3, @PPRODID = 1000, @PQTY = 10, @PDATE = '20211015';
+        -- EXCEPTION - Product ID not found
+        EXEC ADD_COMPLEX_SALE @PCUSTID = 1, @PPRODID = 2000, @PQTY = 10, @PDATE = '20211015';
+
+    -- TASK 17 TESTS
+        BEGIN
+            DECLARE @MYCURSOR CURSOR, @SID BIGINT, @CID INT, @PID INT, @QTY INT, @PRICE MONEY, @SDATE DATE;
+            EXEC GET_ALLSALES @POUTCUR = @MYCURSOR OUT;
+            FETCH NEXT FROM @MYCURSOR INTO @SID, @CID, @PID, @QTY, @PRICE, @SDATE;
+            WHILE (@@FETCH_STATUS = 0)
+                BEGIN
+                    PRINT(CONCAT(@SID, ' ', @CID, ' ', @PID, ' ', @QTY, ' ', @PRICE, ' ', @SDATE))
+                    FETCH NEXT FROM @MYCURSOR INTO @SID, @CID, @PID, @QTY, @PRICE, @SDATE;
+                END
+            CLOSE @MYCURSOR;
+            DEALLOCATE @MYCURSOR;
+        END
+
+    -- TASK 18 TESTS
+        EXEC COUNT_PRODUCT_SALES @PDAYS = 100
+*/
 select * from customer;
 select * from PRODUCT;
 SELECT * FROM SALE;
